@@ -17,12 +17,18 @@ namespace ShareSnapAPI.Scenarios
             string socialNetworkExpertAgentName = "SocialNetworkExpertAgent";
             string socialNetworkExpertAgentInstructions = @"You are a social media expert with a keen eye for engaging content. Your role is to review the summary provided by the summarizer agent and write a post targeted for the social network given by the user. Consider the tone, style, and relevance of the summary, ensuring it is engaging, shareable, and likely to resonate with a broad audience. Make sure also that the post uses a tone which is fitting for the target social network. For example, use a more professional tone when the post will be published on LinkedIn or SharePoint; use, instead, a more casual tone when the post will be published on X or Facebook.";
 
-            string socialNetworkShareAgentName = "SocialNetworkShareAgent";
-            string socialNetworkShareAgentInstructions = @"You are a social media manager responsible for sharing engaging content on various channels. Your task is to review the post created by the social network expert agent and post it on the social channel given by the user. You MUST NOT generate the post, just review the one you are provided to and post it on the appropriate channel. Make sure to follow the guidelines of the social network and ensure that the post is engaging, shareable, and likely to resonate with the target audience. You have access to a series of tools to post the content on the following networks:
+            string socialNetworkReviewAgentName = "SocialNetworkReviewAgent";
+            string socialNetworkReviewAgentInstructions = @"You are a social media manager responsible for reviewing social network posts and share them on various channels. Your task is to review the post created by the social network expert agent. You must ensure that the post follows the guidelines of the target network and it's engaging, shareable, and likely to resonate with the target audience. You MUST NOT generate the post, just review the one you are provided. If you approve the post, then you can go on and post it. You have access to a tool that you can use to publish a post on the following channels:
 
                 - SharePoint
                 - LinkedIn
-                - Facebook";
+                - Facebook
+
+               If the post isn't approved, instead, abort the operation";
+
+            string mailShareAgentName = "MailShareAgent";
+            string mailShareAgentInstructions = @"You are a mail manager responsible for sharing engaging content via mail. Your task is to review the post created by the social network expert agent and send it via mail to the given user. The mail address of the recipient will be shared by the user. You MUST use it, you MUST NOT generate another mail address.
+            You MUST NOT generate the post, just review the one you are provided to and share it via mail.";
 
             ChatCompletionAgent summarizerAgent = new ChatCompletionAgent
             {
@@ -43,19 +49,29 @@ namespace ShareSnapAPI.Scenarios
                 FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
             };
 
-            ChatCompletionAgent socialNetworkShareAgent = new ChatCompletionAgent
+            ChatCompletionAgent socialNetworkReviewAgent = new ChatCompletionAgent
             {
-                Name = socialNetworkShareAgentName,
-                Instructions = socialNetworkShareAgentInstructions,
+                Name = socialNetworkReviewAgentName,
+                Instructions = socialNetworkReviewAgentInstructions,
                 Kernel = KernelCreator.CreateKernel(useAzureOpenAI),
                 Arguments = new KernelArguments(openAIPromptExecutionSettings)
             };
 
-            socialNetworkShareAgent.Kernel.ImportPluginFromType<MsGraphPlugin>();
+            socialNetworkReviewAgent.Kernel.ImportPluginFromType<MsGraphPlugin>();
+
+            ChatCompletionAgent mailShareAgent = new ChatCompletionAgent
+            {
+                Name = mailShareAgentName,
+                Instructions = mailShareAgentInstructions,
+                Kernel = KernelCreator.CreateKernel(useAzureOpenAI),
+                Arguments = new KernelArguments(openAIPromptExecutionSettings)
+            };
+
+            mailShareAgent.Kernel.ImportPluginFromType<MsGraphPlugin>();
 
             KernelFunction terminateFunction = KernelFunctionFactory.CreateFromPrompt(
                $$$"""
-                Determine if the post for the social network has been posted. If so, respond with a single word: yes.
+                Determine if the post for the social network has been published and the mail has been sent. If so, respond with a single word: yes.
 
                 History:
 
@@ -71,25 +87,27 @@ namespace ShareSnapAPI.Scenarios
                 Choose only from these participants:
                 - {{{summarizerAgentName}}}
                 - {{{socialNetworkExpertAgentName}}}
-                - {{{socialNetworkShareAgentName}}}
+                - {{{socialNetworkReviewAgentName}}}
+                - {{{mailShareAgentName}}}
 
                 Always follow these steps when selecting the next participant:
                 1) After user input, it is {{{summarizerAgentName}}}'s turn to generate a summary of the given text.
                 2) After {{{summarizerAgentName}}} replies, it's {{{socialNetworkExpertAgentName}}}'s turn to create the social network post.
-                3) After {{{socialNetworkExpertAgentName}}} replies, it's {{{socialNetworkShareAgentName}}}'s turn to post the content on the selected social network.
+                3) After {{{socialNetworkExpertAgentName}}} replies, it's {{{socialNetworkReviewAgentName}}}'s turn to review the post and, if it's approved, to publish it on the selected social channel.
+                4) After {{{socialNetworkReviewAgentName}}} replies, it's {{{mailShareAgentName}}}'s turn to send the content via mail.
                 
                 History:
                 {{$history}}
                 """
                 );
 
-            chat = new(summarizerAgent, socialNetworkExpertAgent, socialNetworkShareAgent)
+            chat = new(summarizerAgent, socialNetworkExpertAgent, socialNetworkReviewAgent, mailShareAgent)
             {
                 ExecutionSettings = new()
                 {
                     TerminationStrategy = new KernelFunctionTerminationStrategy(terminateFunction, KernelCreator.CreateKernel(useAzureOpenAI))
                     {
-                        Agents = [socialNetworkShareAgent],
+                        Agents = [mailShareAgent],
                         ResultParser = (result) => result.GetValue<string>()?.Contains("yes", StringComparison.OrdinalIgnoreCase) ?? false,
                         HistoryVariableName = "history",
                         MaximumIterations = 10

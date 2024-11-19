@@ -58,25 +58,9 @@ namespace ShareSnapAPI.Scenarios
 
             #endregion
 
-            #region Mail Share Agent
-
-            string mailShareAgentName = "MailShareAgent";
-            string mailShareAgentYaml = File.ReadAllText("./Prompts/MailShareAgent.yml");
-            var mailShareAgentTemplate = KernelFunctionYaml.ToPromptTemplateConfig(mailShareAgentYaml);
-
-            ChatCompletionAgent mailShareAgent = new ChatCompletionAgent
-            {
-                Name = mailShareAgentName,
-                Kernel = KernelCreator.CreateKernel(useAzureOpenAI),
-                Arguments = new KernelArguments(openAIPromptExecutionSettings)
-            };
-
-            mailShareAgent.Kernel.ImportPluginFromType<MsGraphPlugin>();
-            #endregion
-
             var terminateFunction = AgentGroupChat.CreatePromptFunctionForStrategy(
                $$$"""
-                Determine if the post for the social network has been published and the mail has been sent. If so, respond with a single word: yes.
+                Determine if the post for the social network has been published. If so, respond with a single word: yes.
 
                 History:
 
@@ -94,13 +78,11 @@ namespace ShareSnapAPI.Scenarios
                 - {{{summarizerAgentName}}}
                 - {{{socialNetworkExpertAgentName}}}
                 - {{{socialNetworkReviewerAgentName}}}
-                - {{{mailShareAgentName}}}
 
                 Always follow these steps when selecting the next participant:
                 1) After user input, it is {{{summarizerAgentName}}}'s turn to generate a summary of the given text.
                 2) After {{{summarizerAgentName}}} replies, it's {{{socialNetworkExpertAgentName}}}'s turn to create the social network post.
                 3) After {{{socialNetworkExpertAgentName}}} replies, it's {{{socialNetworkReviewerAgentName}}}'s turn to review the post and, if it's approved, to publish it on the selected social channel.
-                4) After {{{socialNetworkReviewerAgentName}}} replies, it's {{{mailShareAgentName}}}'s turn to send the content via mail.
                 
                 History:
                 {{$history}}
@@ -108,13 +90,13 @@ namespace ShareSnapAPI.Scenarios
                 safeParameterNames: "history"
                 );
 
-            chat = new(summarizerAgent, socialNetworkExpertAgent, socialNetworkReviewAgent, mailShareAgent)
+            chat = new(summarizerAgent, socialNetworkExpertAgent, socialNetworkReviewAgent)
             {
                 ExecutionSettings = new()
                 {
                     TerminationStrategy = new KernelFunctionTerminationStrategy(terminateFunction, KernelCreator.CreateKernel(useAzureOpenAI))
                     {
-                        Agents = [mailShareAgent],
+                        Agents = [socialNetworkReviewAgent],
                         ResultParser = (result) => result.GetValue<string>()?.Contains("yes", StringComparison.OrdinalIgnoreCase) ?? false,
                         HistoryVariableName = "history",
                         MaximumIterations = 10

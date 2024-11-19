@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import * as React from "react";
 import { useState } from "react";
-import { Button, RadioGroup, Radio, makeStyles, Field, Textarea } from "@fluentui/react-components";
+import { Button, RadioGroup, Radio, makeStyles } from "@fluentui/react-components";
 
 interface AgentProcessingProps {
   getText: () => Promise<string>;
@@ -24,15 +24,10 @@ const useStyles = makeStyles({
 const AgentProcessing: React.FC<AgentProcessingProps> = (props: AgentProcessingProps) => {
   const [selectedValue, setSelectedValue] = useState<string>("");
   const [apiResponse, setApiResponse] = useState<string>("");
-  const [mailAddress, setMailAddress] = useState<string>("");
 
   // eslint-disable-next-line no-undef
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedValue(event.target.value);
-  };
-
-  const handleTextChange = async (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMailAddress(event.target.value);
   };
 
   const createSocialPost = async () => {
@@ -65,9 +60,6 @@ const AgentProcessing: React.FC<AgentProcessingProps> = (props: AgentProcessingP
         <Radio value="LinkedIn" label="LinkedIn" />
         <Radio value="Facebook" label="Facebook" />
       </RadioGroup>
-      <Field className={styles.textAreaField} size="large" label="Enter the mail address:">
-        <Textarea size="large" onChange={handleTextChange} />
-      </Field>
       <Button onClick={createSocialPost}>Share it!</Button>
       <p>{apiResponse}</p>
     </div>

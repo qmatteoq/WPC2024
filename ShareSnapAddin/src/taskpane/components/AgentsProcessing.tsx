@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import * as React from "react";
 import { useState } from "react";
-import { Button, RadioGroup, Radio, makeStyles } from "@fluentui/react-components";
+import { Button, RadioGroup, Radio, makeStyles, Field, Textarea } from "@fluentui/react-components";
 
 interface AgentProcessingProps {
   getText: () => Promise<string>;
@@ -12,15 +12,27 @@ const useStyles = makeStyles({
     flexDirection: "column",
     alignItems: "center",
   },
+  textAreaField: {
+    marginLeft: "20px",
+    marginTop: "30px",
+    marginBottom: "20px",
+    marginRight: "20px",
+    maxWidth: "50%",
+  },
 });
 
 const AgentProcessing: React.FC<AgentProcessingProps> = (props: AgentProcessingProps) => {
   const [selectedValue, setSelectedValue] = useState<string>("");
   const [apiResponse, setApiResponse] = useState<string>("");
+  const [mailAddress, setMailAddress] = useState<string>("");
 
   // eslint-disable-next-line no-undef
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedValue(event.target.value);
+  };
+
+  const handleTextChange = async (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMailAddress(event.target.value);
   };
 
   const createSocialPost = async () => {
@@ -31,7 +43,7 @@ const AgentProcessing: React.FC<AgentProcessingProps> = (props: AgentProcessingP
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ Document: inputText, SocialNetwork: selectedValue }),
+        body: JSON.stringify({ Document: inputText, SocialNetwork: selectedValue, MailAddress: mailAddress }),
       });
       if (response.ok) {
         setApiResponse("Post published successfully");
@@ -53,6 +65,9 @@ const AgentProcessing: React.FC<AgentProcessingProps> = (props: AgentProcessingP
         <Radio value="LinkedIn" label="LinkedIn" />
         <Radio value="Facebook" label="Facebook" />
       </RadioGroup>
+      <Field className={styles.textAreaField} size="large" label="Enter the mail address:">
+        <Textarea size="large" onChange={handleTextChange} />
+      </Field>
       <Button onClick={createSocialPost}>Share it!</Button>
       <p>{apiResponse}</p>
     </div>

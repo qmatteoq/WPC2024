@@ -1,0 +1,15 @@
+﻿name: Summarize
+template: |
+  Summarize the following article {{$article}}. Your objective is to distill the provided article into a clear, one-paragraph summary, ideally no more than 500 words. Focus on capturing the main points, key insights, or notable takeaways in a way that is both accessible and appealing to a general audience. Use simple, straightforward language to ensure clarity and avoid overly technical terms. Always starts the summary with "Here is my summary!".
+template_format: semantic-kernel
+description: A function that summarizes an article.
+input_variables:
+  - name: article
+    description: The article to summarize.
+    is_required: true
+output_variable:
+  description: The generated summary.
+execution_settings:
+  default:
+    temperature: 0.8
+    max_token : 1000

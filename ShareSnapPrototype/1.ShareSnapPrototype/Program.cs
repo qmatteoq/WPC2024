@@ -12,7 +12,7 @@ string endpoint = configuration["AzureOpenAI:Endpoint"];
 string openAIKey = configuration["OpenAI:ApiKey"];
 string openAIModel = configuration["OpenAI:Model"];
 
-var kernel = Kernel.CreateBuilder()
+var kernel = Kernel.CreateBuilder() 
              .AddOpenAIChatCompletion(openAIModel, openAIKey)
              .Build();
 

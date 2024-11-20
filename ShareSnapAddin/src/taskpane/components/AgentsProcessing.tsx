@@ -38,7 +38,7 @@ const AgentProcessing: React.FC<AgentProcessingProps> = (props: AgentProcessingP
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ Document: inputText, SocialNetwork: selectedValue, MailAddress: mailAddress }),
+        body: JSON.stringify({ Document: inputText, SocialNetwork: selectedValue }),
       });
       if (response.ok) {
         setApiResponse("Post published successfully");

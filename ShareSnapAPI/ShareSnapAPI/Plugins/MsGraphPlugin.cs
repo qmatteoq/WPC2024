@@ -30,7 +30,8 @@ namespace ShareSnapAPI.Plugins
 
         [KernelFunction("PostNewsToSharePoint")]
         [Description("Post news to a SharePoint site using Microsoft Graph API")]
-        public async Task PostNewsToSharePointAsync([Description("The title of the news")]string newsTitle, [Description("The content of the news")]string newsContent)
+        public async Task PostNewsToSharePointAsync([Description("The title of the news")]string newsTitle, 
+                                                    [Description("The content of the news")]string newsContent)
         {
             string sanitizedTitle = Regex.Replace(newsTitle, @"[^a-zA-Z0-9\s]", "");
 
@@ -127,33 +128,6 @@ namespace ShareSnapAPI.Plugins
             };
 
             await graphClient.Users[user.Id].SendMail.PostAsync(mailRequest);
-        }
-
-        [KernelFunction("AddAppointment")]
-        [Description("Add an appointment to the user's calendar give the date and the subject")]
-        public async Task AddAppointmentToCalendar(DateTime date, string subject, string email)
-        {
-            var users = await graphClient.Users.GetAsync(requestConfiguration =>
-            {
-                requestConfiguration.QueryParameters.Filter = $"mail eq '{email}'";
-            });
-
-            var user = users.Value.FirstOrDefault();
-
-            await graphClient.Users[user.Id].Calendar.Events.PostAsync(new Event
-            {
-                Subject = subject,
-                Start = new DateTimeTimeZone
-                {
-                    DateTime = date.ToString("yyyy-MM-ddTHH:mm:ss"),
-                    TimeZone = "UTC"
-                },
-                End = new DateTimeTimeZone
-                {
-                    DateTime = date.AddHours(1).ToString("yyyy-MM-ddTHH:mm:ss"),
-                    TimeZone = "UTC"
-                }
-            });
         }
     }
 }
